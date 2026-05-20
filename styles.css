@@ -244,9 +244,20 @@ h1 {
   font-size: 0.92rem;
 }
 
+.status-label {
+  flex: 1;
+  text-align: center;
+}
+
 .text-button {
   color: var(--accent-strong);
   font-weight: 800;
+}
+
+.todo-form button:disabled,
+.text-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
 }
 
 .sr-only {

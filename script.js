@@ -1,4 +1,18 @@
-const STORAGE_KEY = "todo-studio-items";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+import {
+  addDoc,
+  collection,
+  deleteDoc,
+  doc,
+  getFirestore,
+  onSnapshot,
+  orderBy,
+  query,
+  serverTimestamp,
+  updateDoc,
+  writeBatch,
+} from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
+import { firebaseConfig } from "./firebase-config.js";
 
 const form = document.querySelector("#todoForm");
 const input = document.querySelector("#todoInput");
@@ -8,21 +22,20 @@ const countLabel = document.querySelector("#countLabel");
 const clearDoneButton = document.querySelector("#clearDoneButton");
 const progressValue = document.querySelector("#progressValue");
 const progressRing = document.querySelector(".progress-ring");
+const statusLabel = document.querySelector("#statusLabel");
 const filterButtons = document.querySelectorAll(".filter-button");
 
-let todos = loadTodos();
+let todos = [];
 let activeFilter = "all";
+let todosCollection;
 
-function loadTodos() {
-  try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY)) ?? [];
-  } catch {
-    return [];
-  }
+function hasFirebaseConfig() {
+  return Object.values(firebaseConfig).every((value) => value && !value.startsWith("YOUR_"));
 }
 
-function saveTodos() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(todos));
+function setBusy(isBusy) {
+  form.querySelector("button").disabled = isBusy;
+  input.disabled = isBusy;
 }
 
 function visibleTodos() {
@@ -50,7 +63,7 @@ function render() {
     checkbox.checked = todo.done;
     title.textContent = todo.title;
 
-    checkbox.addEventListener("change", () => toggleTodo(todo.id));
+    checkbox.addEventListener("change", () => toggleTodo(todo.id, checkbox.checked));
     deleteButton.addEventListener("click", () => deleteTodo(todo.id));
 
     list.append(item);
@@ -66,32 +79,66 @@ function render() {
   clearDoneButton.disabled = done === 0;
 }
 
-function addTodo(title) {
-  todos.unshift({
-    id: crypto.randomUUID(),
+async function addTodo(title) {
+  await addDoc(todosCollection, {
     title,
     done: false,
-    createdAt: Date.now(),
+    createdAt: serverTimestamp(),
   });
-  saveTodos();
-  render();
 }
 
-function toggleTodo(id) {
-  todos = todos.map((todo) => (
-    todo.id === id ? { ...todo, done: !todo.done } : todo
-  ));
-  saveTodos();
-  render();
+async function toggleTodo(id, done) {
+  await updateDoc(doc(todosCollection, id), { done });
 }
 
-function deleteTodo(id) {
-  todos = todos.filter((todo) => todo.id !== id);
-  saveTodos();
-  render();
+async function deleteTodo(id) {
+  await deleteDoc(doc(todosCollection, id));
 }
 
-form.addEventListener("submit", (event) => {
+async function clearDoneTodos() {
+  const doneTodos = todos.filter((todo) => todo.done);
+  const batch = writeBatch(getFirestore());
+
+  doneTodos.forEach((todo) => {
+    batch.delete(doc(todosCollection, todo.id));
+  });
+
+  await batch.commit();
+}
+
+function startFirestore() {
+  if (!hasFirebaseConfig()) {
+    statusLabel.textContent = "Firebase 설정 필요";
+    setBusy(true);
+    render();
+    return;
+  }
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  todosCollection = collection(db, "todos");
+  const todosQuery = query(todosCollection, orderBy("createdAt", "desc"));
+
+  onSnapshot(
+    todosQuery,
+    (snapshot) => {
+      todos = snapshot.docs.map((snapshotDoc) => ({
+        id: snapshotDoc.id,
+        ...snapshotDoc.data(),
+      }));
+      statusLabel.textContent = "Firebase 연결됨";
+      setBusy(false);
+      render();
+    },
+    (error) => {
+      console.error(error);
+      statusLabel.textContent = "Firebase 오류";
+      setBusy(true);
+    },
+  );
+}
+
+form.addEventListener("submit", async (event) => {
   event.preventDefault();
   const title = input.value.trim();
 
@@ -100,9 +147,16 @@ form.addEventListener("submit", (event) => {
     return;
   }
 
-  addTodo(title);
-  input.value = "";
-  input.focus();
+  try {
+    setBusy(true);
+    await addTodo(title);
+    input.value = "";
+    input.focus();
+  } catch (error) {
+    console.error(error);
+    statusLabel.textContent = "저장 실패";
+    setBusy(false);
+  }
 });
 
 filterButtons.forEach((button) => {
@@ -113,10 +167,15 @@ filterButtons.forEach((button) => {
   });
 });
 
-clearDoneButton.addEventListener("click", () => {
-  todos = todos.filter((todo) => !todo.done);
-  saveTodos();
-  render();
+clearDoneButton.addEventListener("click", async () => {
+  try {
+    await clearDoneTodos();
+  } catch (error) {
+    console.error(error);
+    statusLabel.textContent = "삭제 실패";
+  }
 });
 
+setBusy(true);
 render();
+startFirestore();
