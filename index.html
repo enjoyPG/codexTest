@@ -14,29 +14,33 @@
             <p class="eyebrow">Today</p>
             <h1>Todo Studio</h1>
           </div>
-          <div class="progress-ring" aria-label="완료율">
+          <div class="progress-ring" aria-label="Completion rate">
             <span id="progressValue">0%</span>
           </div>
         </header>
 
         <form class="todo-form" id="todoForm">
-          <label class="sr-only" for="todoInput">할 일</label>
-          <input id="todoInput" type="text" placeholder="할 일을 입력하세요" autocomplete="off" maxlength="80">
-          <button type="submit">추가</button>
+          <label class="sr-only" for="todoInput">Todo title</label>
+          <input id="todoInput" type="text" placeholder="Add a task" autocomplete="off" maxlength="80">
+          <button type="submit">Add</button>
         </form>
 
         <div class="toolbar" aria-label="Todo filters">
-          <button class="filter-button is-active" type="button" data-filter="all">전체</button>
-          <button class="filter-button" type="button" data-filter="active">진행</button>
-          <button class="filter-button" type="button" data-filter="done">완료</button>
+          <button class="filter-button is-active" type="button" data-filter="all">All</button>
+          <button class="filter-button" type="button" data-filter="active">Active</button>
+          <button class="filter-button" type="button" data-filter="done">Done</button>
         </div>
 
         <ul class="todo-list" id="todoList" aria-live="polite"></ul>
 
+        <section class="diagnostics" aria-label="Diagnostics">
+          <strong id="statusLabel">APP_BOOT</strong>
+          <pre id="diagnosticsLog">Starting app...</pre>
+        </section>
+
         <footer class="app-footer">
-          <span id="countLabel">0개 남음</span>
-          <span class="status-label" id="statusLabel">Firebase 연결 중</span>
-          <button class="text-button" id="clearDoneButton" type="button">완료 삭제</button>
+          <span id="countLabel">0 left</span>
+          <button class="text-button" id="clearDoneButton" type="button">Clear done</button>
         </footer>
       </section>
     </main>
@@ -48,10 +52,18 @@
           <span class="custom-check" aria-hidden="true"></span>
         </label>
         <span class="todo-title"></span>
-        <button class="delete-button" type="button" aria-label="삭제">×</button>
+        <button class="delete-button" type="button" aria-label="Delete">x</button>
       </li>
     </template>
 
+    <script>
+      window.addEventListener("error", (event) => {
+        console.error("[TodoStudio][WINDOW_ERROR]", event.message, event.filename, event.lineno, event.colno);
+      });
+      window.addEventListener("unhandledrejection", (event) => {
+        console.error("[TodoStudio][UNHANDLED_REJECTION]", event.reason);
+      });
+    </script>
     <script type="module" src="script.js"></script>
   </body>
 </html>

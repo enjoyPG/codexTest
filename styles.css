@@ -166,7 +166,7 @@ h1 {
   border: 1px dashed var(--line);
   border-radius: 8px;
   color: var(--muted);
-  content: "오늘의 첫 할 일을 추가해보세요";
+  content: "Add your first task";
 }
 
 .todo-item {
@@ -238,15 +238,36 @@ h1 {
   background: #fae6e3;
 }
 
+.diagnostics {
+  display: grid;
+  gap: 8px;
+  margin-top: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #f8f4ec;
+  padding: 10px;
+}
+
+.diagnostics strong {
+  color: var(--accent-strong);
+  font-size: 0.78rem;
+}
+
+.diagnostics pre {
+  max-height: 110px;
+  overflow: auto;
+  margin: 0;
+  color: var(--muted);
+  font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+  font-size: 0.72rem;
+  line-height: 1.45;
+  white-space: pre-wrap;
+}
+
 .app-footer {
   margin-top: 18px;
   color: var(--muted);
   font-size: 0.92rem;
-}
-
-.status-label {
-  flex: 1;
-  text-align: center;
 }
 
 .text-button {

@@ -41,3 +41,15 @@ GitHub Pages 설정:
 - Source: `Deploy from a branch`
 - Branch: `gh-pages` 또는 `main`
 - Folder: `/(root)`
+
+## Diagnostics
+
+The app writes startup and Firebase state codes to both the browser console and the on-page diagnostics panel.
+
+Common codes:
+
+- `CONFIG_IMPORT_FAILED`: `firebase-config.js` was not loaded.
+- `SDK_IMPORT_FAILED`: Firebase SDK CDN was blocked or failed to load.
+- `FIRESTORE_PERMISSION_DENIED`: Firestore Rules blocked read/write access.
+- `FIRESTORE_LISTEN_TIMEOUT`: Firestore did not return a snapshot within 12 seconds.
+- `FIRESTORE_SNAPSHOT_OK`: Firestore is connected and returning data.
