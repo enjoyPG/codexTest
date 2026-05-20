@@ -25,12 +25,17 @@ const progressRing = document.querySelector(".progress-ring");
 const statusLabel = document.querySelector("#statusLabel");
 const filterButtons = document.querySelectorAll(".filter-button");
 
+let db;
 let todos = [];
 let activeFilter = "all";
 let todosCollection;
 
 function hasFirebaseConfig() {
   return Object.values(firebaseConfig).every((value) => value && !value.startsWith("YOUR_"));
+}
+
+function setStatus(message) {
+  statusLabel.textContent = message;
 }
 
 function setBusy(isBusy) {
@@ -73,10 +78,10 @@ function render() {
   const done = todos.length - remaining;
   const percent = todos.length ? Math.round((done / todos.length) * 100) : 0;
 
-  countLabel.textContent = `${remaining}개 남음`;
+  countLabel.textContent = `${remaining} left`;
   progressValue.textContent = `${percent}%`;
   progressRing.style.setProperty("--progress", `${percent * 3.6}deg`);
-  clearDoneButton.disabled = done === 0;
+  clearDoneButton.disabled = done === 0 || !todosCollection;
 }
 
 async function addTodo(title) {
@@ -97,7 +102,7 @@ async function deleteTodo(id) {
 
 async function clearDoneTodos() {
   const doneTodos = todos.filter((todo) => todo.done);
-  const batch = writeBatch(getFirestore());
+  const batch = writeBatch(db);
 
   doneTodos.forEach((todo) => {
     batch.delete(doc(todosCollection, todo.id));
@@ -108,14 +113,14 @@ async function clearDoneTodos() {
 
 function startFirestore() {
   if (!hasFirebaseConfig()) {
-    statusLabel.textContent = "Firebase 설정 필요";
+    setStatus("Firebase config needed");
     setBusy(true);
     render();
     return;
   }
 
   const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
+  db = getFirestore(app);
   todosCollection = collection(db, "todos");
   const todosQuery = query(todosCollection, orderBy("createdAt", "desc"));
 
@@ -126,13 +131,13 @@ function startFirestore() {
         id: snapshotDoc.id,
         ...snapshotDoc.data(),
       }));
-      statusLabel.textContent = "Firebase 연결됨";
+      setStatus("Firebase connected");
       setBusy(false);
       render();
     },
     (error) => {
       console.error(error);
-      statusLabel.textContent = "Firebase 오류";
+      setStatus(`Firebase error: ${error.code ?? "unknown"}`);
       setBusy(true);
     },
   );
@@ -142,7 +147,7 @@ form.addEventListener("submit", async (event) => {
   event.preventDefault();
   const title = input.value.trim();
 
-  if (!title) {
+  if (!title || !todosCollection) {
     input.focus();
     return;
   }
@@ -154,7 +159,7 @@ form.addEventListener("submit", async (event) => {
     input.focus();
   } catch (error) {
     console.error(error);
-    statusLabel.textContent = "저장 실패";
+    setStatus(`Save failed: ${error.code ?? "unknown"}`);
     setBusy(false);
   }
 });
@@ -172,10 +177,11 @@ clearDoneButton.addEventListener("click", async () => {
     await clearDoneTodos();
   } catch (error) {
     console.error(error);
-    statusLabel.textContent = "삭제 실패";
+    setStatus(`Delete failed: ${error.code ?? "unknown"}`);
   }
 });
 
+setStatus("Connecting Firebase");
 setBusy(true);
 render();
 startFirestore();
